@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="style.css">
+    <title>Fakin' It</title>
+    <link href="https://fonts.googleapis.com/css?family=Baloo+Chettan|Roboto+Slab" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <script type="text/javascript" src="/socket.io/socket.io.js"></script>
+    <script type ="text/javascript">
+        $(document).ready(function (){
+
+            var socket = io();
+            var newUser = prompt("Please enter your name")
+            
+            socket.emit('new_user', {name : newUser});
+
+            // socket.on('hello_user', function (data) {
+            //     $('#name').after(`<p><strong>${data.user}</strong> has joined the game</p>`)
+            // })
+
+            socket.on('playerCount', function (data) {
+                $('#count').html(`<p>Number of players: ${data.playerCount}. </p><p>We need 4 players to start!</p>`)
+            })
+
+            // socket.on('startTrigger', function () {
+            //     if (data.players == 4 && data.playerNum == 1) {
+            //         io.emit('startTrigger')
+            //     }
+            // })
+
+            // socket.on('gameStart', function () {
+            //     $('#startButton').html(`<button>Begin Lies</button>`)
+            // })
+
+            // $('#send').click(function(data){
+            //     socket.emit('new_message', {message: $('#message_input').val() })
+            // })
+
+            // socket.on('sent_message', function (data) {
+            //     $('#user_message').append(`<p><strong>${data.user}</strong> says: ${data.message}</label></p>`)
+            // })
+
+            // socket.on('user_disconnect', function (user) {
+            //     $('#user_message').append(`<p><strong>${user.user}</strong> has left the chat room...</p>`)
+            //     $('#count').html(`Number of players: ${user.players}. We need 4 players to start!`)
+            // })
+            
+            socket.on('showBeginButton', function () {
+                // console.log(fake.faker.name)
+                $('#readyText').html('Game starts once any player presses Begin.')
+                $('#readyText').show()
+                $('#beginGame').show()
+                // var timeleft = 5;
+                // var downloadTimer = setInterval(function(){
+                // $("#countdown").html("Game is on in " + timeleft);
+                // timeleft -= 1;
+                // if(timeleft <= 0){
+                //     clearInterval(downloadTimer);
+                //     $("#countdown").html()
+                //     socket.emit('getQuestions')
+                // }
+                // }, 1000);
+            })
+
+            socket.on('showFakeButton', function (data) {
+                $('#count').html(`
+                <p><h2>Current Scoreboard:</h2></p>
+                <p>${data.each.player1.name} has: ${data.each.player1.score} points</p>
+                <p>${data.each.player2.name} has: ${data.each.player2.score} points</p>
+                <p>${data.each.player3.name} has: ${data.each.player3.score} points</p>
+                <p>${data.each.player4.name} has: ${data.each.player4.score} points</p>
+                `)
+                $('#readyText').hide()
+                $('#checkFake').show()
+            })
+
+            $('#checkFake').click(function(){
+                $('#readyText').show()
+                socket.emit('amIaFake', {id : socket.id})
+            })
+
+            $('#checkFake2').click(function(){
+                socket.emit('amIaFake2', {id : socket.id})
+            })
+
+            socket.on('fakeMessage', function(data){
+                $('#checkFake').hide()
+                $('#ready').show()
+                $('#readyText').hide()
+                $('#fakeText').html(data)
+                $('#fakeText').show()
+            })
+            
+            socket.on('realMessage', function(data){
+                $('#checkFake').hide()
+                $('#ready').show()
+                $('#readyText').hide()
+                $('#fakeText').html(data)
+                $('#fakeText').show()
+            })
+            
+            // var count = 0;
+            $('#ready').click(function(){
+                $('#ready').hide()
+                $('#readyText').html('Waiting for the other players...')
+                $('#readyText').show()
+                socket.emit('count')
+            })
+            
+            $('#beginGame').click(function() {
+                socket.emit('getQuestions')
+            })
+
+            // socket.on('showFake', function(theFake,theName) {
+            //     if (theFake.name == theName) {
+            //         console.log("you're the faker")
+            //         console.log(theFake)
+            //         console.log(theName)
+            //     }
+            // });
+            // socket.on('pretend', function () {
+            //     $('#readyText').hide()
+            //     $('#countdown').html("")
+            //     $('#question').html('Look at the other players and try to fit in!')
+            //     // $('#question').show()
+            // }) 
+            socket.on('sendQuestion', function (data) {
+                $('#readyText').hide()
+                $('#countdown').html("")
+                $('#countdown').show()
+
+                if (data.fake == socket.id ) {
+                    $('#question').html('Look at the other players and try to fit in!').show()
+                    $('#question').show()
+                    var timeleft = 8;
+                    var downloadTimer = setInterval(function(){
+                    $("#countdown").html("There are " + timeleft + " seconds. You better fake it.");
+                    timeleft -= 1;
+                    if(timeleft <= -2){
+                        clearInterval(downloadTimer);
+                        $('#fakeText').hide()
+                        $("#countdown").html("Lie to the others. Convince them that one of them is Fake!")
+                        $('#question').hide()
+                        $('#beginGame').hide()
+                    }
+                    }, 1000);
+                    $('#beginGame').val('Do the prompt!');
+                    $('#beginGame').attr('disabled',true);
+                    setTimeout(function(){
+                        $('#beginGame').attr('disabled', false);
+                        $('#beginGame').val('Begin')
+                    }, 10000);
+                } else {
+                    $('#choiceForm').show()
+                    $('#submitFake').show()
+                    $('#question').html(`${data.question}`);
+                    $('#question').show()
+                    var timeleft = 8;
+                    var downloadTimer = setInterval(function(){
+                    $("#countdown").html("You have " + timeleft + " seconds");
+                    timeleft -= 1;
+                    if(timeleft <= -2){
+                        clearInterval(downloadTimer);
+                        $('#fakeText').hide()
+                        $("#countdown").html("Defend yourself and explain why you're NOT Fake! <p>Choose who you think the Fake player is.</p>")
+                        $('#question').hide()
+                        // $('#checkFake2').show()
+                        $('#beginGame').hide()
+                    }
+                    }, 1000);
+                    $('#beginGame').val('Do the prompt!');
+                    $('#beginGame').attr('disabled',true);
+                    setTimeout(function(){
+                        $('#beginGame').attr('disabled', false);
+                        $('#beginGame').val('Begin')
+                    }, 10000);
+                }
+                socket.emit('getForm', data.fake)
+            });
+
+            socket.on('showForm', function (data) {
+                console.log("at front end showForm function")
+                console.log(data)
+                if (socket.id == data.fake) {
+                    console.log('You are a fake!')
+                    // $('#choiceForm').html(`<button id="nextRound">Next Round!</button>`)
+                } else {
+                    console.log('Pick the fake!')
+                    $('#choiceForm').html(`
+                    <select id="name">
+                        <option value="player1">${data.players.player1.name}</option>
+                        <option value="player2">${data.players.player2.name}</option>
+                        <option value="player3">${data.players.player3.name}</option>
+                        <option value="player4">${data.players.player4.name}</option>
+                    </select>
+                    `)
+                    $('#submitFake').show()
+                }
+            });
+
+            $('#submitFake').click(function(){
+                console.log($("#name").val())
+                socket.emit('addToScore', {players: $("#name").val()})
+                // $('#countdown').hide()
+                $('#choiceForm').hide()
+                $('#submitFake').hide()
+                // $('#checkFake2').show()
+                $('#countdown').hide()
+                $('#readyText').html('Waiting for the other players to guess...').show()
+            })
+            socket.on('showNextRoundButton', function (data) {
+                $('#countdown').hide()
+                $('#readyText').show()
+                $('#readyText').html(`The Fake player that round was ${data.currentFake}!`)
+                $('#count').html(`
+                <p><h2>Current Scoreboard:</h2></p>
+                <p>${data.currentScore.player1.name} has: ${data.currentScore.player1.score} points</p>
+                <p>${data.currentScore.player2.name} has: ${data.currentScore.player2.score} points</p>
+                <p>${data.currentScore.player3.name} has: ${data.currentScore.player3.score} points</p>
+                <p>${data.currentScore.player4.name} has: ${data.currentScore.player4.score} points</p>
+                <p>First player to reach 8 points is the best liar!</p>
+                `)
+                $('#nextRound').show()
+            })
+            $('#nextRound').click(function(){
+                $('#readyText').html(`Waiting for the other players...`)
+                $('#nextRound').hide()
+                socket.emit('refreshFake')
+            })
+
+            socket.on('updateScoreboard', function(data) {
+                $('#count').html(`
+                <p><h2>Current Scoreboard:</h2></p>
+                <p>${data.currentScore.player1.name} has: ${data.currentScore.player1.score} points</p>
+                <p>${data.currentScore.player2.name} has: ${data.currentScore.player2.score} points</p>
+                <p>${data.currentScore.player3.name} has: ${data.currentScore.player3.score} points</p>
+                <p>${data.currentScore.player4.name} has: ${data.currentScore.player4.score} points</p>
+                <p>First player to reach 8 points is the best liar!</p>
+                `)
+            })
+
+            socket.on('gameOver', function(data) {
+                // $('#game_over').hide()
+                $('#nextRound').hide()
+                $('#count').html(`
+                <p><h2>Current Scoreboard:</h2></p>
+                <p>${data.currentScore.player1.name} has: ${data.currentScore.player1.score} points</p>
+                <p>${data.currentScore.player2.name} has: ${data.currentScore.player2.score} points</p>
+                <p>${data.currentScore.player3.name} has: ${data.currentScore.player3.score} points</p>
+                <p>${data.currentScore.player4.name} has: ${data.currentScore.player4.score} points</p>
+                <p>First player to reach 8 points is the best liar!</p>
+                `)
+                $('#winner').append(`Game Over!! The winning player is ${data.winner.name}!`)
+                $('#winner').html(`Game Over!! The winning player is ${data.winner.name}!`)
+                $('#winner').show()
+                $('#resetGame').show()
+            })
+
+            socket.on('gameOverFake', function(data) {
+                // $('#game_over').hide()
+                $('#nextRound').hide()
+                $('#count').html(`
+                <p><h2>Current Scoreboard:</h2></p>
+                <p>${data.currentScore.player1.name} has: ${data.currentScore.player1.score} points</p>
+                <p>${data.currentScore.player2.name} has: ${data.currentScore.player2.score} points</p>
+                <p>${data.currentScore.player3.name} has: ${data.currentScore.player3.score} points</p>
+                <p>${data.currentScore.player4.name} has: ${data.currentScore.player4.score} points</p>
+                <p>First player to reach 8 points is the best liar!</p>
+                `)
+                $('#winner').append(`Game Over!! The winning player is ${data.winner.name}!`)
+                $('#winner').html(`Game Over!! The winning player is ${data.winner.name}!`)
+                $('#winner').show()
+                $('#resetGame').show()
+            })
+
+            $('#resetGame').click(function(){
+                $('#nextRound').hide()
+                socket.emit('reset');
+            })
+
+            socket.on('zero', function(data) {
+                $('#resetGame').hide()
+                $('#nextRound').hide()
+                $('#winner').html('')
+                $('#count').html(`
+                <p><h1>Game was reset!</h1></p>
+                <p><h2>Current Scoreboard:</h2></p>
+                <p>${data.currentScore.player1.name} has: ${data.currentScore.player1.score} points</p>
+                <p>${data.currentScore.player2.name} has: ${data.currentScore.player2.score} points</p>
+                <p>${data.currentScore.player3.name} has: ${data.currentScore.player3.score} points</p>
+                <p>${data.currentScore.player4.name} has: ${data.currentScore.player4.score} points</p>
+                <p>First player to reach 8 points is the best liar!</p>
+                `)
+                $('#readyText').html(`Waiting for the other players...`)
+                socket.emit('refreshFake')
+                // $('#checkFake').show()
+            })
+         });
+    </script>
+</head>
+<body>
+    <div id="background">
+    <div style="text-align: center;">
+        <h1 id="gameName">Fakin' It</h1>
+        <h2 id="desc">The game that exposes to your friends whether or not you're fake.</h2>
+    </div>
+    <!-- <hr> -->
+    <div style="text-align: center;">
+        <div class="score">
+            <h3 id="count"></h3>
+        </div>
+    <!-- <hr> -->
+        <h1 id="winner"></h1>
+        <div id="mainText">
+                <div id='game_over'>
+                    <input type="button" id="resetGame" value="Reset Game!" style="background-color: darkolivegreen; color: white; display: none;">
+                    <p id="fakeContainer">
+                        <h3 id="fakeText"></h3>
+                        <input type="button" id="checkFake" value="Check if you're Fake">
+                        <h2 id="countdown"></h2>
+                    </p>
+                    <p id="fakeContainer2">
+                        <h3 id="fakeText"></h3>
+                        <input type="button" id="checkFake2" value="Refresh the Fake">
+                        <h2 id="countdown"></h2>
+                    </p>
+                    <p id="readyButton">
+                        <h3 id=readyText></h3>
+                        <h3 id=question></h3>
+                        <button id="nextRound" style="display: none;">Next Round!</button>
+                        <input type="button" id="ready" value="I'm Ready">
+                        <p id="countdown"></p>
+                    </p>
+                    <p id="startButton">
+                        <h3 id=startText></h3>
+                        <input type="button" id="beginGame" value="Begin">
+                        <p id="countdown"></p>
+                    </p>
+                    <div id="choiceForm">
+                    </div>
+                    <input type="button" id="submitFake" value='is the fake!' style="display: none;">
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
